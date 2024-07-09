@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
       DateTime startDate = _dateRange.start.startOfDay();
 
       List<AppUsageInfo> infoList =
-          await AppUsage().getAppUsageDaily(startDate, endDate);
+          await AppUsage().getUsageMapFromEvents(startDate, endDate);
       setState(() => _infos = infoList);
 
       for (var info in infoList) {

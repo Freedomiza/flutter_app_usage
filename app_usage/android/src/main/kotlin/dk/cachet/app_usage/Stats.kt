@@ -2,12 +2,11 @@ package dk.cachet.app_usage
 
 import android.annotation.TargetApi
 import android.app.usage.UsageEvents
-import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.google.gson.Gson
+//import com.google.gson.Gson
 import java.util.*
 
 
@@ -127,51 +126,68 @@ class Stats {
 
                 if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
                     val packageCheck = stateMap[event.packageName]
+
                     if (packageCheck != null) {
-                        if (stateMap[event.packageName]?.classMap?.containsKey(event.className) == true) {
-                            stateMap[event.packageName]?.className = event.className
-                            stateMap[event.packageName]?.startTime = event.timeStamp
-                            stateMap[event.packageName]?.classMap?.get(event.className)?.startTime = event.timeStamp
-                            stateMap[event.packageName]?.classMap?.get(event.className)?.isResume = true
-                        } else {
-                            stateMap[event.packageName]?.className = event.className
-                            stateMap[event.packageName]?.startTime = event.timeStamp
-                            stateMap[event.packageName]?.classMap?.set(event.className, BoolObj(event.timeStamp, true))
-                        }
+                        packageCheck.sessions.add(
+                            SessionObj(event.timeStamp, 0)
+                        )
                     } else {
-                        val appStates = AppStateModel(event.packageName, event.className, event.timeStamp)
-                        appStates.classMap[event.className] = BoolObj(event.timeStamp, true)
+                        val appStates = AppStateModel(event.packageName, event.timeStamp)
+                        appStates.sessions.add(SessionObj(event.timeStamp, 0 ))
                         stateMap[event.packageName] = appStates
                     }
                 } else if (event.eventType == UsageEvents.Event.ACTIVITY_STOPPED) {
                     val packageCheck = stateMap[event.packageName]
-                    if (packageCheck != null) {
-                        if (stateMap[event.packageName]?.classMap?.containsKey(event.className) == true) {
 
-                            stateMap[event.packageName]?.totalTime = (stateMap[event.packageName]?.totalTime)!! + ((event.timeStamp - stateMap[event.packageName]?.classMap?.get(
-                                event.className
-                            )?.startTime!!)
-                                ?: 0)
-                            stateMap[event.packageName]?.endTime = event.timeStamp
-                            stateMap[event.packageName]?.classMap?.get(event.className)?.isResume = false
+                    if (packageCheck != null) {
+
+                        val lastSession = packageCheck.sessions.last()
+
+
+                        if(lastSession.endTime == 0L) {
+                            // close sessions
+                            lastSession.endTime = event.timeStamp
+                        } else {
+                            // This case should not occur when there a session without endTime
+                            // but in case it happened just record it without startTime
+                            packageCheck.sessions.add(SessionObj(0, event.timeStamp))
                         }
+                    } else {
+                        // event record of prev session filter
+                        val appStates = AppStateModel(event.packageName, start, event.timeStamp)
+                        appStates.sessions.add(SessionObj(start, event.timeStamp))
+                        stateMap[event.packageName] = appStates
                     }
                 } else if (event.eventType == UsageEvents.Event.FOREGROUND_SERVICE_STOP) {
                     val packageCheck = stateMap[event.packageName]
                     if (packageCheck != null) {
-                        if (stateMap[event.packageName]?.classMap?.containsKey(event.className) == true) {
-                            stateMap[event.packageName]?.lastTimeForeground = event.timeStamp
-                        }
+                        packageCheck.lastTimeForeground = event.timeStamp
                     }
                 }
             }
 
-            var result = HashMap<String, List<Long>>()
+
+//            for (key in stateMap.keys) {
+//                val appState = stateMap[key]
+//                if(appState != null) {
+//                    if(appState.startTime != 0L && appState.endTime == 0L) {
+//                        appState.endTime = end
+//                        appState.totalTime = end - appState.startTime
+//                    }
+//                }
+//            }
+
+            //TODO: Loop all array and calc start sessions without closed event
+            val result = HashMap<String, List<Long>>()
 
             for (key in stateMap.keys) {
                 val appState = stateMap[key]
                 if (appState != null) {
-                    result[key] = appState.toMicorsecondList()
+                    appState.calculateSessionData(
+                        start,
+                        end
+                    )
+                    result[key] = appState.toMicrosecondList()
                 }
             }
 
@@ -183,25 +199,48 @@ class Stats {
 
 class AppStateModel(
     var packageName: String = "",
-    var className: String = "",
     var startTime: Long = 0,
     var endTime: Long = 0,
     var totalTime: Long = 0,
     var lastTimeForeground: Long = 0,
-    var classMap: MutableMap<String, BoolObj> = mutableMapOf()
+    var sessions: ArrayList<SessionObj> = arrayListOf()
 ) {
-    fun serialize(): String {
-        val gson = Gson()
-        return gson.toJson(this)
-    }
+
 
     fun toList(): List<Long> {
         return listOf(totalTime, startTime, endTime, lastTimeForeground)
     }
 
-    fun toMicorsecondList(): List<Long> {
+    fun toMicrosecondList(): List<Long> {
         return listOf(totalTime / 1000, startTime / 1000, endTime / 1000, lastTimeForeground / 1000)
     }
+
+    fun calculateSessionData(
+        startFilter: Long,
+        endFilter: Long
+    ) {
+        startTime = sessions.first().startTime
+        if(startTime == 0L) {
+            startTime = startFilter
+        }
+        endTime = sessions.last().endTime
+        if(endTime == 0L) {
+            endTime = endFilter
+        }
+        // Calculate duration
+        for (session in sessions) {
+            totalTime += session.duration()
+        }
+
+    }
+
 }
 
-class BoolObj(var startTime: Long, var isResume: Boolean)
+class SessionObj(var startTime: Long, var endTime: Long) {
+    fun duration(): Long {
+        if(startTime == 0L || endTime == 0L) return 0L
+        val duration = endTime - startTime
+        if( duration > 0L ) return duration
+        return 0L
+    }
+}

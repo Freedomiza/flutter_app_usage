@@ -12,6 +12,8 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import android.os.Build
+import android.os.Bundle
 
 /** AppUsagePlugin */
 public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -40,6 +42,8 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             else -> result.notImplemented()
         }
     }
+
+
 
     fun getUsage(@NonNull call: MethodCall, @NonNull result: Result) {
         // Firstly, permission must be given by the user must be set correctly by the user
