@@ -21,6 +21,7 @@ class AppUsageInfo {
 
   AppUsageInfo(
     String name,
+    this._appName,
     double usageInSeconds,
     this._startDate,
     this._endDate,
@@ -28,7 +29,9 @@ class AppUsageInfo {
   ) {
     List<String> tokens = name.split('.');
     _packageName = name;
-    _appName = tokens.last;
+    if (_appName.isEmpty) {
+      _appName = tokens.last;
+    }
     _usage = Duration(seconds: usageInSeconds.toInt());
   }
 
@@ -87,6 +90,7 @@ class AppUsage {
         if (temp[0] > 0) {
           result.add(AppUsageInfo(
               key,
+              "",
               temp[0],
               DateTime.fromMillisecondsSinceEpoch(temp[1].round() * 1000),
               DateTime.fromMillisecondsSinceEpoch(temp[2].round() * 1000),
@@ -121,6 +125,7 @@ class AppUsage {
         if (temp[0] > 0) {
           result.add(AppUsageInfo(
               key,
+              "",
               temp[0],
               DateTime.fromMillisecondsSinceEpoch(temp[1].round() * 1000),
               DateTime.fromMillisecondsSinceEpoch(temp[2].round() * 1000),
@@ -151,16 +156,24 @@ class AppUsage {
 
       // Convert to list of AppUsageInfo
       List<AppUsageInfo> result = [];
+
       for (String key in usage.keys) {
-        List<int> temp = List<int>.from(usage[key]);
-        if (temp[0] > 0) {
-          result.add(AppUsageInfo(
-            key,
-            temp[0].toDouble(),
-            DateTime.fromMillisecondsSinceEpoch(temp[1].round() * 1000),
-            DateTime.fromMillisecondsSinceEpoch(temp[2].round() * 1000),
-            DateTime.fromMillisecondsSinceEpoch(temp[3].round() * 1000),
-          ));
+        List<Map> sessions = List<Map>.from(usage[key]);
+        if (sessions.isNotEmpty) {
+          for (var session in sessions) {
+            result.add(
+              AppUsageInfo(
+                session['packageName'],
+                session['appName'],
+                (session['duration'] as int?)?.toDouble() ?? 0.0,
+                DateTime.fromMillisecondsSinceEpoch(
+                    session['startTime'].round() * 1000),
+                DateTime.fromMillisecondsSinceEpoch(
+                    session['endTime'].round() * 1000),
+                DateTime.fromMillisecondsSinceEpoch(0),
+              ),
+            );
+          }
         }
       }
 

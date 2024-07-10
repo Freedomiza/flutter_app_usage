@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:app_usage/app_usage.dart';
+import 'package:intl/intl.dart';
 
 void main() => runApp(MyApp());
 
@@ -108,7 +109,7 @@ class _HomePageState extends State<HomePage> {
                 subtitle: Column(
                   children: [
                     Text(
-                        "${app.startDate.toLocalizeString()} - ${app.endDate.toLocalizeString()}"),
+                        "${app.startDate.toShortDateString()} - ${app.endDate.toShortDateString()}"),
                   ],
                 ),
                 trailing: Text(app.usage.toHoursMinutesSeconds()));
@@ -116,5 +117,11 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
           onPressed: getUsageStats, child: Icon(Icons.file_download)),
     );
+  }
+}
+
+extension DateExt on DateTime {
+  String toShortDateString() {
+    return DateFormat.yMd().add_jm().format(this);
   }
 }

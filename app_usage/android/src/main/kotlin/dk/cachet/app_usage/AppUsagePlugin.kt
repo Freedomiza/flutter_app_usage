@@ -65,11 +65,11 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         channel.setMethodCallHandler(null)
     }
 
-    fun checkPermissions(@NonNull call: MethodCall, @NonNull result: Result) {        
+    private fun checkPermissions(@NonNull call: MethodCall, @NonNull result: Result) {
         return result.success(Stats.checkIfStatsAreAvailable(context));
     }
 
-    fun requestPermissions(@NonNull call: MethodCall, @NonNull result: Result) {
+    private fun requestPermissions(@NonNull call: MethodCall, @NonNull result: Result) {
         try {
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             this.activity.startActivity(intent)
@@ -80,7 +80,7 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
     
 
-    fun getUsageFromEvents(@NonNull call: MethodCall, @NonNull result: Result) {
+    private fun getUsageFromEvents(@NonNull call: MethodCall, @NonNull result: Result) {
         // Firstly, permission must be given by the user must be set correctly by the user
         handlePermissions()
 
@@ -89,13 +89,21 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         val end: Long? = call.argument("end")
 
         /// Query the Usage API
-        val usage = Stats.getUsageMapFromEvents(context, start!!, end!!)
+        val usageHash = Stats.getUsageMapFromEvents(context, start!!, end!!)
+        val usageMap: HashMap<String, ArrayList<HashMap<String, Any>>> = hashMapOf()
+        for ((key, value) in usageHash) {
+            val valueMap: ArrayList<HashMap<String, Any>> = arrayListOf()
+            value.forEach {
+                valueMap.add(it.toHashMap())
+            }
+            usageMap[key] = valueMap
+        }
 
         /// Return the result
-        result.success(usage)
+        result.success(usageMap)
     }
-    
-    fun getUsageDaily(@NonNull call: MethodCall, @NonNull result: Result) {
+
+    private fun getUsageDaily(@NonNull call: MethodCall, @NonNull result: Result) {
         handlePermissions()
 
 
@@ -112,7 +120,7 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
 
 
-    fun handlePermissions() {
+    private fun handlePermissions() {
         /// If stats are not available, show the permission screen to give access to them
         if (!Stats.checkIfStatsAreAvailable(context)) {
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
