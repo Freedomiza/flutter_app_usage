@@ -251,21 +251,24 @@ class Stats {
                                 )
                             )
                         } else {
-
-                            if (lastSession.endTime == 0L && lastSession.appName != SCREEN_ON_EVENT && lastSession.appName != SCREEN_OFF_EVENT) {
-                                lastSession.endTime = event.timeStamp - 1000
-                            }
+                            if (lastSession.packageName == event.packageName) {
 
 
-                            stateMap.add(
-                                UserRecord(
-                                    packageName,
-                                    appName,
-                                    event.timeStamp,
-                                    0,
-                                    event.eventType
+                            } else {
+                                if (lastSession.endTime == 0L && lastSession.appName != SCREEN_ON_EVENT && lastSession.appName != SCREEN_OFF_EVENT) {
+                                    lastSession.endTime = event.timeStamp - 1000
+                                }
+
+                                stateMap.add(
+                                    UserRecord(
+                                        packageName,
+                                        appName,
+                                        event.timeStamp,
+                                        0,
+                                        event.eventType
+                                    )
                                 )
-                            )
+                            }
 
                         }
                     }
