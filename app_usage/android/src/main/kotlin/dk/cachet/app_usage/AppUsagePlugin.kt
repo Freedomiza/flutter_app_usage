@@ -12,8 +12,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import android.os.Build
-import android.os.Bundle
+
 
 /** AppUsagePlugin */
 public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -90,13 +89,9 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
         /// Query the Usage API
         val usageHash = Stats.getUsageMapFromEvents(context, start!!, end!!)
-        val usageMap: HashMap<String, ArrayList<HashMap<String, Any>>> = hashMapOf()
-        for ((key, value) in usageHash) {
-            val valueMap: ArrayList<HashMap<String, Any>> = arrayListOf()
-            value.forEach {
-                valueMap.add(it.toHashMap())
-            }
-            usageMap[key] = valueMap
+        val usageMap: ArrayList<HashMap<String, Any>> = ArrayList()
+        usageHash.forEach {
+            usageMap.add(it.toHashMap())
         }
 
         /// Return the result

@@ -151,31 +151,31 @@ class AppUsage {
       Map<String, dynamic> interval = {'start': start, 'end': end};
 
       /// Get result and parse it as a Map of <String, List<double>>
-      Map usage =
+      List<dynamic> usage =
           await _methodChannel.invokeMethod('getUsageFromEvents', interval);
 
       // Convert to list of AppUsageInfo
       List<AppUsageInfo> result = [];
 
-      for (String key in usage.keys) {
-        List<Map> sessions = List<Map>.from(usage[key]);
-        if (sessions.isNotEmpty) {
-          for (var session in sessions) {
-            result.add(
-              AppUsageInfo(
-                session['packageName'],
-                session['appName'],
-                (session['duration'] as int?)?.toDouble() ?? 0.0,
-                DateTime.fromMillisecondsSinceEpoch(
-                    session['startTime'].round() * 1000),
-                DateTime.fromMillisecondsSinceEpoch(
-                    session['endTime'].round() * 1000),
-                DateTime.fromMillisecondsSinceEpoch(0),
-              ),
-            );
-          }
+      // for (String key in usage.keys) {
+      List<Map> sessions = List<Map>.from(usage);
+      if (sessions.isNotEmpty) {
+        for (var session in sessions) {
+          result.add(
+            AppUsageInfo(
+              session['packageName'],
+              session['appName'],
+              (session['duration'] as int?)?.toDouble() ?? 0.0,
+              DateTime.fromMillisecondsSinceEpoch(
+                  session['startTime'].round() * 1000),
+              DateTime.fromMillisecondsSinceEpoch(
+                  session['endTime'].round() * 1000),
+              DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+          );
         }
       }
+      // }
 
       return result;
     }

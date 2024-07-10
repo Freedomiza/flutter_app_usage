@@ -122,6 +122,7 @@ class _HomePageState extends State<HomePage> {
 
 extension DateExt on DateTime {
   String toShortDateString() {
+    if (this.millisecondsSinceEpoch == 0) return "";
     return DateFormat.yMd().add_jm().format(this);
   }
 }
