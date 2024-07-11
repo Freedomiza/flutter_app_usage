@@ -13,6 +13,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 
+
 class Stats {
 
     companion object {
@@ -119,7 +120,7 @@ class Stats {
             return usageMap
         }
 
-        fun getAppName(packageName: String, packageManager: PackageManager): String {
+        private fun getAppName(packageName: String, packageManager: PackageManager): String {
 
             val appName: String = try {
                 packageManager.getApplicationLabel(
@@ -191,11 +192,12 @@ class Stats {
                         } else {
                             if(lastSession.appName == SCREEN_OFF_EVENT) {
                                 lastSession.endTime = event.timeStamp - 1000
-                            } else {
-                                if(lastSession.appName != SCREEN_ON_EVENT) {
-                                    lastSession.endTime = event.timeStamp - 1000
-                                }
                             }
+//                            else {
+//                                if(lastSession.appName != SCREEN_ON_EVENT) {
+//                                    lastSession.endTime = event.timeStamp - 1000
+//                                }
+//                            }
 
                             stateMap.add(
                                 UserRecord(
@@ -221,10 +223,10 @@ class Stats {
                                 )
                             )
                         } else {
-
-                            if (lastSession.appName != SCREEN_ON_EVENT && lastSession.endTime == 0L) {
-                                lastSession.endTime = event.timeStamp - 1000
-                            }
+                            // Close last session
+//                            if (lastSession.appName != SCREEN_ON_EVENT && lastSession.endTime == 0L) {
+//                                lastSession.endTime = event.timeStamp - 1000
+//                            }
 
                             stateMap.add(
                                 UserRecord(
@@ -238,7 +240,23 @@ class Stats {
                         }
 
                     }
-
+//                    UsageEvents.Event.ACTIVITY_PAUSED -> {
+//                        if(lastSession != null && lastSession.appName != SCREEN_ON_EVENT && lastSession.appName != SCREEN_OFF_EVENT) {
+//                            if(lastSession.packageName != event.packageName) {
+//                                findAndUpdateLastSessionApp(stateMap, UserRecord(
+//                                    packageName,
+//                                    appName,
+//                                    0,
+//                                    event.timeStamp,
+//                                    event.eventType
+//                                ))
+//                                if(lastSession.endTime == 0L) {
+//                                    lastSession.endTime = event.timeStamp
+//                                    lastSession.isPaused = true
+//                                }
+//                            }
+//                        }
+//                    }
                     UsageEvents.Event.ACTIVITY_RESUMED -> {
                         if(lastSession == null) {
                             stateMap.add(
@@ -251,14 +269,10 @@ class Stats {
                                 )
                             )
                         } else {
-                            if (lastSession.packageName == event.packageName) {
-
-
-                            } else {
-                                if (lastSession.endTime == 0L && lastSession.appName != SCREEN_ON_EVENT && lastSession.appName != SCREEN_OFF_EVENT) {
-                                    lastSession.endTime = event.timeStamp - 1000
-                                }
-
+                            if (lastSession.packageName != event.packageName) {
+//                                if (lastSession.endTime == 0L && lastSession.appName != SCREEN_ON_EVENT && lastSession.appName != SCREEN_OFF_EVENT) {
+//                                    lastSession.endTime = event.timeStamp - 1000
+//                                }
                                 stateMap.add(
                                     UserRecord(
                                         packageName,
@@ -269,28 +283,9 @@ class Stats {
                                     )
                                 )
                             }
-
                         }
                     }
 
-//                    UsageEvents.Event.ACTIVITY_PAUSED -> {
-//                        if(lastSession == null) {
-//                            stateMap.add(
-//                                UserRecord(
-//                                    packageName,
-//                                    appName,
-//                                    start,
-//                                    event.timeStamp,
-//                                    event.eventType
-//                                )
-//                            )
-//                        } else {
-//                            if (lastSession.packageName == event.packageName && lastSession.endTime == 0L) {
-//                                lastSession.endTime = event.timeStamp
-//                                lastSession.lastEvent = event.eventType
-//                            }
-//                        }
-//                    }
                     UsageEvents.Event.ACTIVITY_STOPPED -> {
                         if(lastSession == null) {
                             stateMap.add(
@@ -303,38 +298,53 @@ class Stats {
                                 )
                             )
                         } else {
-                            if (lastSession.packageName == event.packageName) {
-                                // && lastSession.endTime == 0L
-//                                if(lastSession.lastEvent != UsageEvents.Event.ACTIVITY_RESUMED) {
-                                    lastSession.endTime = event.timeStamp
-                                    lastSession.lastEvent = event.eventType
-                                    continue
-//                                }
+
+                            val newRecord =  UserRecord(
+                                packageName,
+                                appName,
+                                0,
+                                event.timeStamp,
+                                event.eventType
+                            )
+                            if (findAndUpdateLastSessionApp(stateMap, newRecord)) {
+
                             } else {
-                                Log.d(
-                                    TAG,
-                                    "Event stopped, prev session: ${lastSession.packageName}, start: ${lastSession.startTime}"
+                                stateMap.add(
+                                    newRecord
                                 )
-
-                                if(!findAndUpdateLastSessionApp(stateMap, UserRecord(
-                                    packageName,
-                                    appName,
-                                    0,
-                                    event.timeStamp,
-                                    event.eventType
-                                ))) {
-
-                                    stateMap.add(
-                                        UserRecord(
-                                            packageName,
-                                            appName,
-                                            0,
-                                            event.timeStamp,
-                                            event.eventType
-                                        )
-                                    )
-                                }
                             }
+//                            if (lastSession.packageName == event.packageName) {
+//                                // && lastSession.endTime == 0L
+////                                if(lastSession.lastEvent != UsageEvents.Event.ACTIVITY_RESUMED) {
+//                                    lastSession.endTime = event.timeStamp
+//                                    lastSession.lastEvent = event.eventType
+//                                    continue
+////                                }
+//                            } else {
+//                                Log.d(
+//                                    TAG,
+//                                    "Event stopped, prev session: ${lastSession.packageName}, start: ${lastSession.startTime}"
+//                                )
+//
+//                                if(!findAndUpdateLastSessionApp(stateMap, UserRecord(
+//                                    packageName,
+//                                    appName,
+//                                    0,
+//                                    event.timeStamp,
+//                                    event.eventType
+//                                ))) {
+//
+//                                    stateMap.add(
+//                                        UserRecord(
+//                                            packageName,
+//                                            appName,
+//                                            0,
+//                                            event.timeStamp,
+//                                            event.eventType
+//                                        )
+//                                    )
+//                                }
+//                            }
                         }
                     }
 
@@ -443,13 +453,13 @@ class Stats {
             for (i in list.lastIndex downTo 0) {
 
                 val session = list[i]
-                println(session)
+//                println(session)
                 if (session.packageName == record.packageName) {
-                    if(session.endTime == 0L) {
+//                    if(session.endTime == 0L) {
                         session.endTime = record.endTime
                         found = true
-                        break
-                    }
+//                        break
+//                    }
                     break
                 }
             }
@@ -466,7 +476,7 @@ val SCREEN_OFF_EVENT: String = "SCREEN_OFF"
 
 
 
-class UserRecord(var packageName: String, var appName: String, var startTime: Long, var endTime: Long, var lastEvent: Int) {
+class UserRecord(var packageName: String, var appName: String, var startTime: Long, var endTime: Long, var lastEvent: Int, var isPaused: Boolean = false) {
     val duration: Long
         get()  {
             if(startTime == 0L || endTime == 0L) return 0L
