@@ -149,12 +149,62 @@ class Stats {
 
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         @SuppressWarnings("ResourceType")
+        fun getRawUsageMapFromEvents( context: Context,
+                                      start: Long,
+                                      end: Long
+        ) : ArrayList<UserRecord> {
+            val stateMap = ArrayList<UserRecord>()
+            val usageStatsManager =
+                context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val packageManager = context.packageManager
+
+            val eventList = usageStatsManager.queryEvents(start, end)
+
+            while (eventList.hasNextEvent()) {
+                val event = UsageEvents.Event()
+                eventList.getNextEvent(event)
+
+                // Ignore system app
+//                if (isSystemApp(
+//                        event,
+//                        packageManager
+//                    ) && event.eventType != UsageEvents.Event.SCREEN_INTERACTIVE &&
+//                    event.eventType != UsageEvents.Event.SCREEN_NON_INTERACTIVE
+//                ) {
+//
+//                    continue
+//                }
+
+                val appName = getAppName(event.packageName, packageManager)
+                val packageName = event.packageName
+
+
+                stateMap.add(
+                    UserRecord(
+                        packageName,
+                        appName,
+                        event.timeStamp,
+                        0,
+                        event.eventType,
+                        isSystemApp(
+                            event,
+                            packageManager
+                        )
+                    )
+                )
+            }
+
+            return stateMap
+        }
+
+        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+        @SuppressWarnings("ResourceType")
         fun getUsageMapFromEvents(
             context: Context,
             start: Long,
             end: Long
         ): ArrayList<UserRecord> {
-            val stateMap: ArrayList<UserRecord> = ArrayList<UserRecord>()
+            val stateMap = ArrayList<UserRecord>()
             val usageStatsManager =
                 context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val packageManager = context.packageManager
@@ -350,93 +400,9 @@ class Stats {
 
                 }
 
-
-
-
-//                if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-//                    val packageCheck = stateMap[packageName]
-//
-//                    if (packageCheck != null) {
-//                        packageCheck.add(
-//                            UserRecord(packageName, appName, event.timeStamp, 0)
-//                        )
-//                    } else {
-//                        stateMap[packageName] = arrayListOf()
-//                        stateMap[packageName]!!.add(
-//                            UserRecord(
-//                                packageName,
-//                                appName,
-//                                event.timeStamp,
-//                                0
-//                            )
-//                        )
-//                    }
-//                } else if (event.eventType == UsageEvents.Event.ACTIVITY_STOPPED) {
-//                    val packageCheck = stateMap[event.packageName]
-//
-//                    if (packageCheck != null) {
-//                        val lastSession = packageCheck.lastOrNull()
-//                        // Activity already start after filter start date
-//                        if (lastSession == null) {
-//                            // Assign start filter as start time for this first event
-//                            packageCheck.add(
-//                                UserRecord(
-//                                    packageName,
-//                                    appName,
-//                                    start,
-//                                    event.timeStamp
-//                                )
-//                            )
-//                        } else {
-//                            if (lastSession.endTime == 0L) {
-//                                // close last resume sessions
-//                                lastSession.endTime = event.timeStamp
-//                            } else {
-//                                // This case should not occur when there a session without endTime
-//                                // but in case it happened just record it without startTime
-//                                packageCheck.add(
-//                                    UserRecord(
-//                                        packageName,
-//                                        appName,
-//                                        event.timeStamp - 1,
-//                                        event.timeStamp
-//                                    )
-//                                )
-//                            }
-//                        }
-//
-//                    } else {
-//                        // event record of prev session filter
-//                        stateMap[event.packageName] = arrayListOf()
-//                        stateMap[event.packageName]!!.add(
-//                            UserRecord(
-//                                packageName,
-//                                appName,
-//                                start,
-//                                event.timeStamp
-//                            )
-//                        )
-//
-//                    }
-//                } else {
-//                    Log.d(
-//                        TAG,
-//                        "Event: ${event.eventType}  ${event.packageName}  ${event.className}  ${event.timeStamp}"
-//                    )
-//                }
             }
 
-//            for (key in stateMap.keys) {
-//                val state = stateMap[key]
-//                if (state != null) {
-//                    val lastSession = state.lastOrNull()
-//                    if (lastSession != null) {
-//                        if (lastSession.startTime != 0L && lastSession.endTime == 0L) {
-//                            lastSession.endTime = getLastFilterTime(end)
-//                        }
-//                    }
-//                }
-//            }
+
 
             return stateMap
         }
@@ -476,7 +442,7 @@ val SCREEN_OFF_EVENT: String = "SCREEN_OFF"
 
 
 
-class UserRecord(var packageName: String, var appName: String, var startTime: Long, var endTime: Long, var lastEvent: Int, var isPaused: Boolean = false) {
+class UserRecord(var packageName: String, var appName: String, var startTime: Long, var endTime: Long, var lastEvent: Int, var isSystem: Boolean = false) {
     val duration: Long
         get()  {
             if(startTime == 0L || endTime == 0L) return 0L
@@ -493,8 +459,10 @@ class UserRecord(var packageName: String, var appName: String, var startTime: Lo
         map["endTime"] = endTime / 1000
         map["duration"] = duration / 1000
         map["event"] = lastEvent
+        map["isSystemApp"] = isSystem
 
         return map
     }
 
 }
+

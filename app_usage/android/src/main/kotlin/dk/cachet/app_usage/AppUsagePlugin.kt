@@ -38,6 +38,7 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             "requestPermission" -> requestPermissions(call, result)
             "getUsageFromEvents" -> getUsageFromEvents(call, result)
             "getUsageDaily" -> getUsageDaily(call, result)
+            "getRawUsageFromEvents" -> getRawUsageFromEvents(call, result)
             else -> result.notImplemented()
         }
     }
@@ -89,6 +90,25 @@ public class AppUsagePlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
         /// Query the Usage API
         val usageHash = Stats.getUsageMapFromEvents(context, start!!, end!!)
+        val usageMap: ArrayList<HashMap<String, Any>> = ArrayList()
+        usageHash.forEach {
+            usageMap.add(it.toHashMap())
+        }
+
+        /// Return the result
+        result.success(usageMap)
+    }
+
+    private fun getRawUsageFromEvents(@NonNull call: MethodCall, @NonNull result: Result) {
+        // Firstly, permission must be given by the user must be set correctly by the user
+        handlePermissions()
+
+        // Parse parameters, i.e. start- and end-date
+        val start: Long? = call.argument("start")
+        val end: Long? = call.argument("end")
+
+        /// Query the Usage API
+        val usageHash = Stats.getRawUsageMapFromEvents(context, start!!, end!!)
         val usageMap: ArrayList<HashMap<String, Any>> = ArrayList()
         usageHash.forEach {
             usageMap.add(it.toHashMap())
